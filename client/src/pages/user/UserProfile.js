@@ -1,276 +1,292 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Key, UserCircle } from 'lucide-react';
+import axios from 'axios';
+import { Link, useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/AdminLayout';
-import CashierLayout from '../../components/CashierLayout';
 import StoreKeeperLayout from '../../components/StoreKeeperLayout';
-import AlertModal from './AlertModal';
+import CashierLayout from '../../components/CashierLayout';
+import { useCart } from '../CartContext';
+import CartIcon from '../CarIcon';
 
 const UserProfile = () => {
-    const { id } = useParams();
-    const [user, setUser] = useState(null);
-    const [isEditing, setIsEditing] = useState(false);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [formData, setFormData] = useState({});
-    const [confirmPassword, setConfirmPassword] = useState(''); // Nuevo estado para confirmar contraseña
-    const [errorMessages, setErrorMessages] = useState([]);
-    const [showAlert, setShowAlert] = useState(false);
-    const [alertMessage, setAlertMessage] = useState('');
     const navigate = useNavigate();
+    const { cart, setCart } = useCart();
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [error, setError] = useState(null);
+    const [formData, setFormData] = useState({
+        Nombres: '',
+        Apellidos: '',
+        Correo: '',
+        Telefono: '',
+        Direccion: '',
+        Rol: '',
+        Estado: '',
+        Genero: '',
+        Contrasena: '',
+        CurrentPassword: '',
+    });
+    const [updateSuccess, setUpdateSuccess] = useState(false);
 
-    const handleLogout = () => {
-        sessionStorage.removeItem('usuario');
-        navigate('/');
-    };
+    const usuario = JSON.parse(sessionStorage.getItem('usuario'));
+    const id = usuario ? usuario.ID : null;
+
+    useEffect(() => {
+        if (!id) {
+            setError('ID de usuario no disponible');
+            setLoading(false);
+            return;
+        }
+
+        const fetchUserData = async () => {
+            try {
+                const response = await axios.get(`http://localhost:3002/users/user/${id}`);
+                const userData = response.data?.data;
+                if (userData) {
+                    setProfile(userData);
+                    setFormData({
+                        Nombres: userData.Nombres,
+                        Apellidos: userData.Apellidos,
+                        Correo: userData.Correo,
+                        Telefono: userData.Telefono,
+                        Direccion: userData.Direccion,
+                        Rol: userData.Rol,
+                        Estado: userData.Estado,
+                        Genero: userData.Genero,
+                    });
+                } else {
+                    throw new Error('Datos del usuario no encontrados');
+                }
+            } catch (err) {
+                console.error(err);
+                setError('Error al cargar los datos del usuario');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserData();
+    }, [id]);
 
     const toggleDropdown = () => {
         setIsDropdownOpen(prevState => !prevState);
     };
 
-    useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const response = await fetch(`http://localhost:3001/users/${id}`);
-                const data = await response.json();
-                setUser(data);
-                setFormData(data);
-            } catch (error) {
-                console.error('Error fetching user:', error);
-            }
-        };
-
-        fetchUser();
-    }, [id]);
-
-    const handleEditClick = () => setIsEditing(true);
-    const handleCancelClick = () => {
-        setIsEditing(false);
-        setFormData(user);
-        setConfirmPassword('');
-        setErrorMessages([]);
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prevState) => ({
+            ...prevState,
+            [name]: value,
+        }));
     };
 
-    const handleSaveClick = async () => {
-        setErrorMessages([]);
-        const newErrorMessages = [];
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-        const phoneRegex = /^3\d{9}$/;
-        if (!phoneRegex.test(formData.Telefono)) {
-            newErrorMessages.push('El teléfono debe tener exactamente 10 dígitos y comenzar con 3.');
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(formData.Correo)) {
-            newErrorMessages.push('Por favor, introduce un correo electrónico válido.');
-        }
-
-        const nameRegex = /^[A-Za-z\s]+$/;
-        if (!nameRegex.test(formData.Nombres) || !nameRegex.test(formData.Apellidos)) {
-            newErrorMessages.push('El nombre y el apellido solo pueden contener letras y espacios.');
-        }
-
-        if (formData.Contrasena.length < 6) {
-            newErrorMessages.push('La contraseña debe tener al menos 6 caracteres.');
-        }
-
-        // Validar que las contraseñas coincidan
-        if (formData.Contrasena !== confirmPassword) {
-            newErrorMessages.push('Las contraseñas no coinciden.');
-        }
-
-        for (const key in formData) {
-            if (!formData[key]) {
-                newErrorMessages.push(`El campo ${key} es obligatorio.`);
-            }
-        }
-
-        if (newErrorMessages.length > 0) {
-            setErrorMessages(newErrorMessages);
-            return;
-        }
+        const data = { ...formData, ID: id };
 
         try {
-            const response = await fetch(`http://localhost:3001/users/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
-            if (!response.ok) {
-                throw new Error('Error al actualizar el usuario');
+            const response = await axios.put('http://localhost:3002/users/updateUser', data);
+            if (response.status === 200) {
+                setUpdateSuccess(true);
             }
-            const updatedUser = await response.json();
-            setUser(updatedUser);
-            setIsEditing(false);
-            setAlertMessage('Los datos se han actualizado correctamente.');
-            setShowAlert(true);
-        } catch (error) {
-            console.error('Error saving user:', error);
+        } catch (err) {
+            setError('Error al actualizar los datos del usuario');
         }
     };
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+    const handleLogout = () => {
+        const user = JSON.parse(sessionStorage.getItem('usuario'));
+        if (user) {
+            setCart([]); // Limpiar el carrito
+            localStorage.removeItem(`cart_${user.id}`); // También eliminar del localStorage
+        }
+        sessionStorage.removeItem('usuario');
+        setProfile(null);
+        navigate('/');
     };
 
-    const handleConfirmPasswordChange = (e) => {
-        setConfirmPassword(e.target.value);
-    };
-
-    const closeAlert = () => {
-        setShowAlert(false);
-    };
-
-    if (!user) return <div className="text-center py-10">Cargando...</div>;
-
-    const renderField = (icon, label, value, name) => (
-        <div className="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5">
-            <dt className="text-sm font-medium text-gray-500 flex items-center">
-                {icon}
-                <span className="ml-2">{label}</span>
-            </dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                {isEditing && name !== "Rol" && name !== "Genero" ? (
-                    <input
-                        type={name === "Contrasena" ? "password" : "text"}
-                        name={name}
-                        value={formData[name] || ''}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-md"
-                    />
-                ) : (
-                    name === "Contrasena" ? "********" : value
-                )}
-            </dd>
-        </div>
-    );
-
-    const renderProfileContent = () => (
-        <div className="max-w-sm mx-auto bg-white shadow-xl rounded-lg overflow-hidden my-10">
-            <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 h-28"></div>
-            <div className="relative -mt-12 flex justify-center">
-                <div className="rounded-full border-4 border-white p-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                    </svg>
-                </div>
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <div className="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full border-blue-600 border-t-transparent"></div>
             </div>
-            <div className="text-center mt-2">
-                <h1 className="text-xl font-bold text-gray-900">{user.Nombres} {user.Apellidos}</h1>
-                <p className="text-sm text-gray-600">{user.Rol}</p>
-            </div>
+        );
+    }
 
-            <div className="px-6 py-4">
-                <div className="grid grid-cols-1 gap-4 text-sm">
-                    {renderField(<Mail className="h-5 w-5 text-gray-500" />, "Correo", user.Correo, "Correo")}
-                    {renderField(<MapPin className="h-5 w-5 text-gray-500" />, "Dirección", user.Direccion, "Direccion")}
-                    {renderField(<UserCircle className="h-5 w-5 text-gray-500" />, "Género", user.Genero, "Genero")}
-                    {renderField(<Phone className="h-5 w-5 text-gray-500" />, "Teléfono", user.Telefono, "Telefono")}
-                    {renderField(<Key className="h-5 w-5 text-gray-500" />, "Contraseña", user.Contrasena, "Contrasena")}
-                    {isEditing && (
-                        <div className="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5">
-                            <dt className="text-sm font-medium text-gray-500 flex items-center">
-                                <Key className="h-5 w-5 text-gray-500" />
-                                <span className="ml-2">Confirmar Contraseña</span>
-                            </dt>
-                            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                                <input
-                                    type="password"
-                                    value={confirmPassword}
-                                    onChange={handleConfirmPasswordChange}
-                                    className="w-full px-3 py-2 border rounded-md"
-                                />
-                            </dd>
+    if (error) {
+        return <div className="text-red-500 text-center">{error}</div>;
+    }
+
+    const renderUserProfile = () => {
+        return (
+            <div className="max-w-5xl mx-auto p-6 bg-white rounded-lg shadow-md mt-10"> {/* Cambié a max-w-5xl */}
+                <h2 className="text-2xl font-semibold mb-4">Actualizar Perfil de {profile.Nombres} {profile.Apellidos}</h2>
+
+                {/* Mensaje de error */}
+                {error && (
+                    <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 relative rounded-r-lg shadow-sm">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <h3 className="text-sm font-medium text-red-800">¡Error!</h3>
+                                <p className="mt-1 text-sm text-red-700">{error}</p>
+                            </div>
+                            <button onClick={() => setError('')} className="absolute top-4 right-4 text-red-600 hover:text-red-800">
+                                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                            </button>
                         </div>
-                    )}
-                </div>
-                {errorMessages.length > 0 && (
-                    <div className="text-red-500">
-                        {errorMessages.map((msg, index) => (
-                            <p key={index}>{msg}</p>
-                        ))}
                     </div>
                 )}
-            </div>
 
-            <div className="flex justify-center pb-6">
-                {isEditing ? (
-                    <>
-                        <button
-                            onClick={handleSaveClick}
-                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 mr-2"
-                        >
-                            Guardar
-                        </button>
-                        <button
-                            onClick={handleCancelClick}
-                            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                        >
-                            Cancelar
-                        </button>
-                    </>
-                ) : (
-                    <button
-                        onClick={handleEditClick}
-                        className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600"
-                    >
-                        Editar Perfil
-                    </button>
+                {/* Mensaje de éxito */}
+                {updateSuccess && (
+                    <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 relative rounded-r-lg shadow-sm">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <h3 className="text-sm font-medium text-green-800">¡Actualización exitosa!</h3>
+                                <p className="mt-1 text-sm text-green-700">Tu perfil ha sido actualizado correctamente.</p>
+                            </div>
+                            <button onClick={() => setUpdateSuccess(false)} className="absolute top-4 right-4 text-green-600 hover:text-green-800">
+                                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 )}
-            </div>
 
-            {showAlert && (
-                <AlertModal message={alertMessage} onClose={closeAlert} />
-            )}
-        </div>
-    );
+                <form onSubmit={handleSubmit}>
+                    <input type="hidden" name="Rol" value={formData.Rol} />
+                    <input type="hidden" name="Estado" value={formData.Estado} />
+                    <input type="hidden" name="Genero" value={formData.Genero} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <input
+                            type="hidden"
+                            value={`${formData.Nombres} ${formData.Apellidos}`}
+                            className="mt-2 p-2 border border-gray-300 rounded w-full"
+                            disabled
+                        />
+
+                        <div className="form-group">
+                            <label className="block font-medium text-gray-700">Correo Electrónico</label>
+                            <input
+                                type="email"
+                                name="Correo"
+                                value={formData.Correo}
+                                onChange={handleChange}
+                                className="mt-2 p-2 border border-gray-300 rounded w-full"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="block font-medium text-gray-700">Teléfono</label>
+                            <input
+                                type="text"
+                                name="Telefono"
+                                value={formData.Telefono}
+                                onChange={handleChange}
+                                className="mt-2 p-2 border border-gray-300 rounded w-full"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="block font-medium text-gray-700">Dirección</label>
+                            <input
+                                type="text"
+                                name="Direccion"
+                                value={formData.Direccion}
+                                onChange={handleChange}
+                                className="mt-2 p-2 border border-gray-300 rounded w-full"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="block font-medium text-gray-700">Nueva Contraseña</label>
+                            <input
+                                type="password"
+                                name="Contrasena"
+                                placeholder='Si desea cambiar la contraseña llenar este campo'
+                                value={formData.Contrasena}
+                                onChange={handleChange}
+                                className="mt-2 p-2 border border-gray-300 rounded w-full"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="block font-medium text-gray-700">Contraseña Actual</label>
+                            <input
+                                type="password"
+                                name="CurrentPassword"
+                                placeholder='Si desea cambiar la contraseña llenar este campo'
+                                value={formData.CurrentPassword}
+                                onChange={handleChange}
+                                className="mt-2 p-2 border border-gray-300 rounded w-full"
+                            />
+                        </div>
+
+                        <div className="col-span-2 flex justify-center">
+                            <button type="submit" className="bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700">Actualizar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        );
+    };
+
 
     const renderLayout = () => {
-        if (user.Rol === 'Administrador') {
+        if (profile.Rol === 'Administrador') {
             return (
                 <AdminLayout>
-                    {renderProfileContent()}
+                    {renderUserProfile()}
                 </AdminLayout>
             );
-        } else if (user.Rol === 'Almacenista') {
+        } else if (profile.Rol === 'Almacenista') {
             return (
                 <StoreKeeperLayout>
-                    {renderProfileContent()}
+                    {renderUserProfile()}
                 </StoreKeeperLayout>
             );
-        } else if (user.Rol === 'Cajero') {
+        } else if (profile.Rol === 'Cajero') {
             return (
                 <CashierLayout>
-                    {renderProfileContent()}
+                    {renderUserProfile()}
                 </CashierLayout>
             );
-        } else if (user.Rol === 'Cliente') {
+        } else if (profile.Rol === 'Cliente'){
             return (
-                <>
+                <div>
                     <header className="bg-gray-800 py-4 shadow-md w-full">
                         <div className="container mx-auto px-4 flex justify-between items-center">
-                            <a href="/consultaProductoCliente" className="text-lg font-bold text-white">Solo Electricos</a>
+                            <Link to="/consultaProductoCliente" className="text-lg font-bold text-white">Solo Electricos</Link>
                             <nav className="hidden md:flex space-x-4">
                                 <ul className="flex space-x-4">
-                                    <li><a href="/consultaProductoCliente" className="text-white hover:text-gray-300">Inicio</a></li>
-                                    <li><a href="/pedidoCliente" className="text-white hover:text-gray-300">Mis Pedidos</a></li>
+                                    <li><Link to="/consultaProductoCliente" className="text-white hover:text-gray-300">Inicio</Link></li>
+                                    <li><Link to="/pedidoCliente" className="text-white hover:text-gray-300">Mis pedidos</Link></li>
                                 </ul>
                             </nav>
                             <div className="flex items-center space-x-4">
-                                <a href="/Cart" className="flex items-center space-x-2 text-white hover:bg-gray-300 p-2 rounded-md">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.6 3h12.8l.6-3h2M3 3l3 15h12l3-15H3zm3 15a2 2 0 100 4 2 2 0 000-4zm12 0a2 2 0 100 4 2 2 0 000-4z" />
-                                    </svg>
-                                    <span>Carrito</span>
-                                </a>
+                                <CartIcon />
                                 <div className="relative">
                                     <button
                                         id="dropdown-button"
                                         onClick={toggleDropdown}
                                         className="flex items-center space-x-2 py-1 text-white hover:bg-gray-300 rounded-md focus:outline-none"
                                     >
-                                        {user ? (
-                                            <span>{user.Nombres} {user.Apellidos}</span>
+                                        {profile ? (
+                                            <span>{profile.Nombres} {profile.Apellidos}</span>
                                         ) : (
                                             <p>No hay sesión activa.</p>
                                         )}
@@ -280,14 +296,14 @@ const UserProfile = () => {
                                     </button>
                                     {isDropdownOpen && (
                                         <div id="dropdown-menu" className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-md shadow-lg">
-                                            {user ? (
-                                                <Link to={`/usuarioPerfil/${user.id}`} className='block px-4 py-2 text-gray-700 hover:bg-gray-300'>Mi Perfil</Link>
+                                            {profile ? (
+                                                <Link to={`/usuarioPerfil`} className='block px-4 py-2 text-gray-700 hover:bg-gray-300'>Mi Perfil</Link>
                                             ) : (
                                                 <p>No hay sesión activa.</p>
                                             )}
-                                            <li className="px-4 py-2 hover:bg-gray-200 cursor-pointer">
+                                            <div className="px-4 py-2 hover:bg-gray-200 cursor-pointer">
                                                 <button onClick={handleLogout}>Cerrar Sesión</button>
-                                            </li>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -299,12 +315,14 @@ const UserProfile = () => {
                             </div>
                         </div>
                     </header>
-                    {renderProfileContent()}
-                </>
+                    {renderUserProfile()}
+                </div>
             );
+
         }
-        return null;
-    };
+
+
+    }
 
     return (
         <>

@@ -57,13 +57,14 @@ CREATE TABLE usuario (
     Nombres VARCHAR(100) NOT NULL,
     Apellidos VARCHAR(100) NOT NULL,
     Correo VARCHAR(100) UNIQUE NOT NULL,
-    Contrasena VARCHAR(64) NOT NULL,
+    Contrasena VARCHAR(60) NOT NULL,
     Telefono VARCHAR(20) NOT NULL,
-    Direccion VARCHAR(255) NOT NULL,
-    Genero ENUM('Masculino', 'Femenino') NOT NULL,
-    Rol ENUM('Administrador', 'Almacenista', 'Cajero', 'Cliente') NOT NULL,
-    Estado ENUM('Activo', 'Inactivo') DEFAULT 'Activo',
-    Usoc ENUM('Usada', 'NoUsada') DEFAULT 'NoUsada'
+    Direccion varchar(255) NOT NULL,
+    Genero enum('Masculino', 'Femenino') not null,
+    Rol enum('Administrador', 'Almacenista', 'Cajero', 'Cliente') NOT NULL,
+    Estado enum('Activo', 'Inactivo') default 'Activo',
+    Usoc enum('Usada', 'NoUsada') default 'NoUsada',
+    Codigo int unsigned
 );
 
 -- Crear tabla historial_activaciones

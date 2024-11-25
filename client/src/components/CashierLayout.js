@@ -71,7 +71,7 @@ const CashierLayout = ({ children }) => {
                                 <ul>
                                     <li className="px-4 py-2 hover:bg-gray-200 cursor-pointer">
                                     {user ? (
-                                        <Link to={`/usuarioPerfil/${user.id}`}>Mi Perfil</Link>
+                                        <Link to={`/usuarioPerfil`}>Mi Perfil</Link>
                                     ): (
                                         <p>No hay sesión activa.</p>
                                     )}

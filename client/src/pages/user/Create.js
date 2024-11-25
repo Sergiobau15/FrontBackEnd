@@ -279,7 +279,7 @@ const Create = () => {
                             <p className="mt-4 text-sm text-gray-600">
                                 Al registrarte, recibirás un correo con tus credenciales de acceso.
                             </p>
-                            <Link to="/login" className="text-blue-500 hover:text-blue-700 underline block mt-4">
+                            <Link to="/login" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
                                 ¿Ya tienes una cuenta?
                             </Link>
                         </div>

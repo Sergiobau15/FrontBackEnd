@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
-import Header from '../../components/Header';
 
 const Login = () => {
     const [Correo, setCorreo] = useState('');
     const [Contrasena, setContrasena] = useState('');
     const [error, setError] = useState('');
+    const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
     const [mostrarContrasena, setMostrarContrasena] = useState(false);
     const navigate = useNavigate();
+    const accountDropdownRef = useRef(null);
 
     const validarCorreo = (correo) => {
         const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -19,27 +20,27 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
-    
+
         if (!Correo || !Contrasena) {
             setError('Todos los campos son obligatorios');
             return;
         }
-    
+
         if (!validarCorreo(Correo)) {
             setError('El correo electrónico no es válido');
             return;
         }
-    
+
         try {
             const response = await axios.post('http://localhost:3002/users/validation', {
                 Correo,
                 Contrasena
             }, { withCredentials: true });
-    
+
             const usuario = response.data.usuario;
             console.log('Datos del usuario:', usuario);
             sessionStorage.setItem('usuario', JSON.stringify(usuario));
-    
+
             if (usuario.Usoc === "NoUsada") {
                 navigate('/nuevaClave');
             } else {
@@ -63,19 +64,92 @@ const Login = () => {
             }
         } catch (error) {
             const mensajeError = error.response?.data?.message || 'Error inesperado al iniciar sesión.';
-            setError(mensajeError); // Mostrar mensaje de error específico
+            setError(mensajeError);
             console.error('Error al iniciar sesión:', mensajeError);
         }
     };
-    
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (accountDropdownRef.current && !accountDropdownRef.current.contains(event.target)) {
+                setIsAccountDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     return (
         <div>
-            <Header />
+            
+            <header className="bg-gray-800 py-4 shadow-md w-full">
+                <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
+                    <Link to="/" className="text-lg font-bold text-gray-100">
+                        Solo Electricos
+                    </Link>
+
+                    <nav className="flex justify-center space-x-4 mt-4 md:mt-0">
+                        <ul className="flex flex-wrap justify-center space-x-4">
+                            <li>
+                                <Link
+                                    to="/"
+                                    className="text-gray-100 hover:text-gray-300"
+                                >
+                                    Inicio
+                                </Link>
+                            </li>
+                        </ul>
+                    </nav>
+
+                    <div className="flex items-center space-x-6 mt-4 md:mt-0">  
+                        <div className="relative" ref={accountDropdownRef}>
+                            <button
+                                onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
+                                className="flex items-center text-gray-100 hover:text-gray-300 focus:outline-none"
+                            >
+                                <span>Mi Cuenta</span>
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    strokeWidth="1.5"
+                                    stroke="currentColor"
+                                    className="w-5 h-5 ml-1"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+                                    />
+                                </svg>
+                            </button>
+                            {isAccountDropdownOpen && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                                    <Link
+                                        to="/registroUsuarioCliente"
+                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                        Registrarme
+                                    </Link>
+                                    <Link
+                                        to="/login"
+                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                        Iniciar sesión
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </header>
             <div className="container mx-auto p-4">
                 <main className="bg-white p-8 rounded-lg shadow-md max-w-md mx-auto m-4">
                     <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Iniciar sesión</h2>
-                    
+
                     {error && (
                         <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 relative rounded-r-lg shadow-sm">
                             <div className="flex">
@@ -94,7 +168,7 @@ const Login = () => {
                                     </p>
                                 </div>
                                 {/* Botón de cerrar */}
-                                <button 
+                                <button
                                     onClick={() => setError('')}
                                     className="absolute top-4 right-4 text-red-600 hover:text-red-800"
                                 >
@@ -105,7 +179,7 @@ const Login = () => {
                             </div>
                         </div>
                     )}
-                    
+
                     <form onSubmit={handleLogin} className="space-y-6">
                         <div>
                             <label htmlFor="Correo" className="block text-sm font-medium text-gray-700 mb-2">
@@ -155,12 +229,22 @@ const Login = () => {
                             Iniciar sesión
                         </button>
                         <div className="text-center">
-                            <a
-                                href="/user/register"
+                            <Link
+                                to="/enviarCorreo"
+                                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                            >
+                                ¿Olvidaste tu contraseña?
+                            </Link>
+
+                        </div>
+                        <div className="text-center">
+                            <Link
+                                to="/registroUsuarioCliente"
                                 className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                             >
                                 ¿No tienes una cuenta?
-                            </a>
+                            </Link>
+
                         </div>
                     </form>
                 </main>

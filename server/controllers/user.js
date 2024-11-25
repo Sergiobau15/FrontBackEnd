@@ -111,23 +111,194 @@ const createUser = async (req, res) => {
     }
 };
 
-const getUser = (req, res) => {
-    const id = req.body.ID;
+const generateRecoveryCode = () => {
+    return Math.floor(100000 + Math.random() * 900000); // Código de 6 dígitos
+};
 
-    db.query("SELECT*FROM usuario WHERE Estado = 'Activo' AND Id = ?", [id], (err, results) => {
 
-        if (err) {
+// Función para enviar correo con código de recuperación
+const sendRecoveryEmail = async (userEmail, recoveryCode) => {
+    const mailOptions = {
+        from: 'practicaenvio@gmail.com',
+        to: userEmail,
+        subject: 'Recuperación de contraseña - Solo Eléctricos',
+        html: `
+            <h1>Recuperación de contraseña</h1>
+            <p>Hola,</p>
+            <p>Has solicitado recuperar tu contraseña. Usa el siguiente código para continuar con el proceso:</p>
+            <h2>${recoveryCode}</h2>
+            <p>Si no solicitaste esto, ignora este mensaje.</p>
+            <p>Saludos,<br>Equipo de Solo Eléctricos</p>
+        `
+    };
 
-            console.log(err);
+    return transporter.sendMail(mailOptions);
+};
 
-        } else {
+const startPasswordRecovery = async (req, res) => {
+    try {
+        const Correo = req.body.Correo;
 
-            res.send(results);
-            console.log(results);
+        console.log('Correo recibido:', Correo);
 
+        // Verificar si el correo existe en la base de datos
+        const [user] = await new Promise((resolve, reject) => {
+            db.query("SELECT * FROM usuario WHERE Correo = ?", [Correo], (err, results) => {
+                if (err) reject(err);
+                resolve(results);
+            });
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "El correo no está registrado"
+            });
         }
+
+        // Generar y guardar código de recuperación
+        const recoveryCode = generateRecoveryCode();
+        await new Promise((resolve, reject) => {
+            db.query("UPDATE usuario SET Codigo = ? WHERE Correo = ?", [recoveryCode, Correo], (err) => {
+                if (err) reject(err);
+                resolve();
+            });
+        });
+
+        // Enviar correo con el código
+        await sendRecoveryEmail(Correo, recoveryCode);
+
+        res.status(200).json({
+            success: true,
+            message: "Código de recuperación enviado"
+        });
+    } catch (error) {
+        console.error('Error en startPasswordRecovery:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error al iniciar la recuperación de contraseña",
+            error: error.message
+        });
+    }
+};
+
+// Validar código y correo
+const validateCode = async (req, res) => {
+    try {
+        const { Correo, Codigo } = req.body;
+        console.log(Correo, Codigo);
+        
+
+        console.log(`Validando código para correo: ${Correo}`);
+
+        // Validar código en la base de datos
+        const [user] = await new Promise((resolve, reject) => {
+            db.query("SELECT * FROM usuario WHERE Correo = ? AND Codigo = ?", [Correo, Codigo], (err, results) => {
+                if (err) reject(err);
+                resolve(results);
+            });
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: "Código inválido o expirado"
+            });
+        }
+
+        // Retornar éxito y permitir cambiar contraseña
+        res.status(200).json({
+            success: true,
+            message: "Código válido"
+        });
+    } catch (error) {
+        console.error('Error en validateCode:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error al validar el código",
+            error: error.message
+        });
+    }
+};
+
+// Cambiar contraseña
+const changePassword = async (req, res) => {
+    try {
+        const { Correo, NuevaContrasena } = req.body;
+
+        console.log(`Actualizando contraseña para correo: ${Correo}`);
+
+        // Encriptar nueva contraseña
+        const hashedPassword = await bcrypt.hash(NuevaContrasena, saltRounds);
+
+        // Actualizar contraseña y limpiar código
+        await new Promise((resolve, reject) => {
+            db.query("UPDATE usuario SET Contrasena = ?, Codigo = NULL WHERE Correo = ?", [hashedPassword, Correo], (err) => {
+                if (err) reject(err);
+                resolve();
+            });
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Contraseña actualizada correctamente"
+        });
+    } catch (error) {
+        console.error('Error en changePassword:', error);
+        res.status(500).json({
+            success: false,
+            message: "Error al cambiar la contraseña",
+            error: error.message
+        });
+    }
+};
+
+
+
+const getUser = (req, res) => {
+    // Obtenemos el ID desde los parámetros de la URL
+    const id = req.params.id;
+
+    if (!id) {
+        return res.status(400).json({
+            success: false,
+            message: 'ID de usuario no proporcionado'
+        });
+    }
+
+    // Seleccionamos todos los campos excepto la contraseña
+    const query = `
+        SELECT * FROM usuario 
+        WHERE Estado = 'Activo' 
+        AND ID = ?
+    `;
+
+    db.query(query, [id], (err, results) => {
+        if (err) {
+            console.error('Error al consultar usuario:', err);
+            return res.status(500).json({
+                success: false,
+                message: 'Error al obtener los datos del usuario',
+                error: err.message
+            });
+        }
+
+        // Verificamos si se encontró el usuario
+        if (results.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+
+        // Enviamos solo el primer resultado ya que buscamos por ID único
+        res.status(200).json({
+            success: true,
+            data: results[0]  // Aquí devuelves los datos del usuario encontrado
+        });
     });
 };
+
 
 const getUsers = (req, res) => {
 
@@ -201,8 +372,6 @@ const updatePassword = async (req, res) => {
     }
 };
 
-
-
 const validationUser = async (req, res) => {
     const correo = req.body.Correo;
     const contrasena = req.body.Contrasena;
@@ -264,9 +433,77 @@ const validationUser = async (req, res) => {
     }
 };
 
-
-
 const updateUser = (req, res) => {
+    const id = req.body.ID;
+    const nombres = req.body.Nombres;
+    const apellidos = req.body.Apellidos;
+    const correo = req.body.Correo;
+    const contrasena = req.body.Contrasena; // La nueva contraseña del usuario
+    const telefono = req.body.Telefono;
+    const direccion = req.body.Direccion;
+    const genero = req.body.Genero;
+    const rol = req.body.Rol;
+    const estado = req.body.Estado;
+    const currentPassword = req.body.CurrentPassword; // Contraseña actual del usuario (solo si la cambia)
+
+    // Verificamos si el usuario quiere cambiar la contraseña
+    if (contrasena) {
+        // Primero, obtenemos la contraseña actual almacenada en la base de datos
+        const queryGetPassword = `SELECT Contrasena FROM usuario WHERE ID = ?`;
+        db.query(queryGetPassword, [id], async (err, results) => {
+            if (err) {
+                console.log(err);
+                return res.status(500).send('Error al obtener los datos del usuario');
+            }
+
+            if (results.length === 0) {
+                return res.status(404).send('Usuario no encontrado');
+            }
+
+            // Comparamos la contraseña actual con la almacenada
+            const storedPassword = results[0].Contrasena;
+
+            const match = await bcrypt.compare(currentPassword, storedPassword); // Compara las contraseñas
+            if (!match) {
+                return res.status(400).send('La contraseña actual es incorrecta');
+            }
+
+            // Encriptamos la nueva contraseña si las contraseñas coinciden
+            const hashedPassword = await bcrypt.hash(contrasena, 10);
+
+            // Ahora actualizamos los datos del usuario, incluyendo la nueva contraseña encriptada
+            const updateQuery = `
+                UPDATE usuario 
+                SET Nombres = ?, Apellidos = ?, Correo = ?, Contrasena = ?, Telefono = ?, Direccion = ?, Genero = ?, Rol = ?, Estado = ? 
+                WHERE ID = ?`;
+
+            db.query(updateQuery, [nombres, apellidos, correo, hashedPassword, telefono, direccion, genero, rol, estado, id], (err, results) => {
+                if (err) {
+                    console.log(err);
+                    return res.status(500).send('Error al actualizar el usuario');
+                }
+                res.send('Usuario actualizado con éxito');
+            });
+        });
+    } else {
+        // Si no se va a cambiar la contraseña, simplemente actualizamos el resto de los campos sin encriptar la contraseña
+        const updateQuery = `
+            UPDATE usuario 
+            SET Nombres = ?, Apellidos = ?, Correo = ?, Telefono = ?, Direccion = ?, Genero = ?, Rol = ?, Estado = ? 
+            WHERE ID = ?`;
+
+        db.query(updateQuery, [nombres, apellidos, correo, telefono, direccion, genero, rol, estado, id], (err, results) => {
+            if (err) {
+                console.log(err);
+                return res.status(500).send('Error al actualizar el usuario');
+            }
+            res.send('Usuario actualizado con éxito');
+        });
+    }
+};
+
+
+const updateUsers = (req, res) => {
     const id = req.body.ID;
     const nombres = req.body.Nombres;
     const apellidos = req.body.Apellidos;
@@ -311,15 +548,46 @@ const desactivateUser = (req, res) => {
     });
 };
 
+const reactivate = (req, res) => {
+    const { userIds } = req.body;
+
+    if (!userIds || userIds.length === 0) {
+        return res.status(400).json({ error: 'No se proporcionaron IDs de usuario' });
+    }
+
+    // Crear la consulta SQL para reactivar los usuarios
+    const query = `
+        UPDATE usuario 
+        SET Estado = 'Activo'
+        WHERE ID IN (?)`;  // Usamos IN (?) para pasar los IDs
+
+    // Ejecutamos la consulta con los userIds
+    db.query(query, [userIds], (err, results) => {
+        if (err) {
+            console.error('Error al intentar reactivar usuarios:', err);
+            return res.status(500).json({ error: 'Error al reactivar los usuarios', details: err });
+        }
+
+        // Si la consulta se ejecutó con éxito, devolvemos un mensaje de éxito
+        res.status(200).json({ message: 'Usuarios reactivados correctamente', affectedRows: results.affectedRows });
+    });
+};
+
+
 
 module.exports = {
 
     createUser,
     updateUser,
+    updateUsers,
     updatePassword,
     getUser,
     getUsers,
     getUsersI,
     validationUser,
-    desactivateUser
+    desactivateUser,
+    validateCode,
+    changePassword,
+    startPasswordRecovery,
+    reactivate
 }

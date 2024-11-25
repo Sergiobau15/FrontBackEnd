@@ -13,6 +13,58 @@ export default function AdminUsers() {
     const [isInactiveModalOpen, setIsInactiveModalOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [inactiveSearchTerm, setInactiveSearchTerm] = useState('');
+    const [selectedUsers, setSelectedUsers] = useState([]);
+    const [allSelected, setAllSelected] = useState(false);
+
+    const handleUserSelection = (userId) => {
+        setSelectedUsers(prevSelected => {
+            if (prevSelected.includes(userId)) {
+                return prevSelected.filter(id => id !== userId);
+            } else {
+                return [...prevSelected, userId];
+            }
+        });
+    };
+
+    const handleSelectAll = () => {
+        if (allSelected) {
+            setSelectedUsers([]);
+        } else {
+            setSelectedUsers(paginatedInactiveUsers.map(user => user.ID));
+        }
+        setAllSelected(!allSelected);
+    };
+
+    const handleMassReactivation = async () => {
+        try {
+            const response = await fetch('http://localhost:3002/users/reactivate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',  // Especificamos que estamos enviando JSON
+                },
+                body: JSON.stringify({
+                    userIds: selectedUsers,  // Enviamos los IDs seleccionados en el cuerpo de la solicitud
+                }),
+            });
+    
+            if (response.ok) {
+
+                alert('Usuarios reactivados exitosamente');
+                setSelectedUsers([]);
+                setAllSelected(false); 
+                closeInactiveModal();
+                window.location.reload();
+
+            } else {
+                throw new Error('Error al intentar reactivar los usuarios');
+            }
+        } catch (error) {
+            console.error('Error al reactivar usuarios:', error);
+            alert('Hubo un problema al intentar reactivar los usuarios');
+        }
+    };
+    
+
 
     useEffect(() => {
         fetchUsers();
@@ -68,18 +120,6 @@ export default function AdminUsers() {
         setSelectedUser(null);
     };
 
-    const handleReactivate = async (userId) => {
-        if (window.confirm('¿Estás seguro de que quieres reactivar este usuario?')) {
-            try {
-                await axios.get(`http://localhost:3002/users/reactivate/${userId}`);
-                console.log('Usuario reactivado:', userId);
-                fetchUsers();
-                fetchInactiveUsers();
-            } catch (error) {
-                console.error('Error al reactivar el usuario:', error);
-            }
-        }
-    };
 
     const closeInactiveModal = () => {
         setIsInactiveModalOpen(false);
@@ -116,7 +156,7 @@ export default function AdminUsers() {
 
 
     const handleDelete = async (userId) => {
-        if (window.confirm('¿Estás seguro de que quieres eliminar este usuario permanentemente?')) {
+        if (window.confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
             try {
                 await axios.get(`http://localhost:3002/users/desactivate/${userId}`);
                 console.log('Usuario marcado como inactivo:', userId);
@@ -146,12 +186,12 @@ export default function AdminUsers() {
                             <div className="flex justify-between items-center mb-4">
                                 <Link to="/registroUsuarioAdministrador" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Registrar usuario</Link>
                                 <div className="flex space-x-4">
-                                <button
-                                    onClick={handleOpenInactiveModal}
-                                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                                >
-                                    Usuarios Inactivos
-                                </button>
+                                    <button
+                                        onClick={handleOpenInactiveModal}
+                                        className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                                    >
+                                        Usuarios Inactivos
+                                    </button>
                                     <input
                                         type="text"
                                         placeholder="Buscar usuario"
@@ -221,30 +261,37 @@ export default function AdminUsers() {
                             value={inactiveSearchTerm}
                             onChange={(e) => setInactiveSearchTerm(e.target.value)}
                         />
-                        
+
                         <table className="min-w-full bg-white">
                             <thead>
                                 <tr>
+                                    <th className="py-2 px-4 border-b">
+                                        <input
+                                            type="checkbox"
+                                            checked={allSelected}
+                                            onChange={handleSelectAll}
+                                            className="form-checkbox"
+                                        />
+                                    </th>
                                     <th className="py-2 px-4 border-b">Nombre</th>
                                     <th className="py-2 px-4 border-b">Correo</th>
                                     <th className="py-2 px-4 border-b">Rol</th>
-                                    <th className="py-2 px-4 border-b">Acción</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {paginatedInactiveUsers.map(user => (
                                     <tr key={user.ID}>
+                                        <td className="py-2 px-4 border-b">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedUsers.includes(user.ID)}
+                                                onChange={() => handleUserSelection(user.ID)}
+                                                className="form-checkbox"
+                                            />
+                                        </td>
                                         <td className="py-2 px-4 border-b">{user.Nombres} {user.Apellidos}</td>
                                         <td className="py-2 px-4 border-b">{user.Correo}</td>
                                         <td className="py-2 px-4 border-b">{user.Rol}</td>
-                                        <td className="py-2 px-4 border-b">
-                                            <button
-                                                onClick={() => handleReactivate(user.ID)}
-                                                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                                            >
-                                                Reactivar
-                                            </button>
-                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -263,6 +310,7 @@ export default function AdminUsers() {
                             ))}
                         </div>
 
+                        {/* Botones de acción */}
                         <div className="flex justify-end space-x-2 mt-4">
                             <button
                                 onClick={closeInactiveModal}
@@ -270,10 +318,19 @@ export default function AdminUsers() {
                             >
                                 Cerrar
                             </button>
+                            <button
+                                onClick={handleMassReactivation}
+                                disabled={selectedUsers.length === 0}
+                                className="bg-green-500 text-white p-2 rounded hover:bg-green-600 text-sm"
+                            >
+                                Reactivar Seleccionados
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
+
+
 
             {isModalOpen && selectedUser && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
@@ -338,8 +395,8 @@ export default function AdminUsers() {
                                         onChange={(e) => setSelectedUser({ ...selectedUser, Genero: e.target.value })}
                                     >
                                         <option value="">Selecciona un género</option>
-                                        <option value="Masculino">Masculino</option>
-                                        <option value="Femenino">Femenino</option>
+                                        <option value="masculino">Masculino</option>
+                                        <option value="femenino">Femenino</option>
                                     </select>
                                 </div>
                                 <div>
@@ -383,4 +440,4 @@ export default function AdminUsers() {
 
         </AdminLayout>
     );
-}   
+}
