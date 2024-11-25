@@ -395,8 +395,8 @@ export default function AdminUsers() {
                                         onChange={(e) => setSelectedUser({ ...selectedUser, Genero: e.target.value })}
                                     >
                                         <option value="">Selecciona un género</option>
-                                        <option value="masculino">Masculino</option>
-                                        <option value="femenino">Femenino</option>
+                                        <option value="Masculino">Masculino</option>
+                                        <option value="Femenino">Femenino</option>
                                     </select>
                                 </div>
                                 <div>

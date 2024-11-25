@@ -122,6 +122,9 @@ const UserProfile = () => {
         return (
             <div className="max-w-5xl mx-auto p-6 bg-white rounded-lg shadow-md mt-10"> {/* Cambié a max-w-5xl */}
                 <h2 className="text-2xl font-semibold mb-4">Actualizar Perfil de {profile.Nombres} {profile.Apellidos}</h2>
+                <p className="text-xl font-semibold mb-4">Datos: </p>
+                <p className="text-l">Rol: {profile.Rol}</p>
+                <p className="text-l mb-6">Genero: {profile.Genero}</p>
 
                 {/* Mensaje de error */}
                 {error && (

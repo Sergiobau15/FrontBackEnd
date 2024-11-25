@@ -84,7 +84,7 @@ const Login = () => {
 
     return (
         <div>
-            
+
             <header className="bg-gray-800 py-4 shadow-md w-full">
                 <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
                     <Link to="/" className="text-lg font-bold text-gray-100">
@@ -104,7 +104,7 @@ const Login = () => {
                         </ul>
                     </nav>
 
-                    <div className="flex items-center space-x-6 mt-4 md:mt-0">  
+                    <div className="flex items-center space-x-6 mt-4 md:mt-0">
                         <div className="relative" ref={accountDropdownRef}>
                             <button
                                 onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
@@ -229,22 +229,23 @@ const Login = () => {
                             Iniciar sesión
                         </button>
                         <div className="text-center">
-                            <Link
-                                to="/enviarCorreo"
-                                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                            >
-                                ¿Olvidaste tu contraseña?
-                            </Link>
+                            <div>
+                                <Link
+                                    to="/enviarCorreo"
+                                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                                >
+                                    ¿Olvidó su contraseña?
+                                </Link>
+                            </div>
 
-                        </div>
-                        <div className="text-center">
-                            <Link
-                                to="/registroUsuarioCliente"
-                                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                            >
-                                ¿No tienes una cuenta?
-                            </Link>
-
+                            <div>
+                                <Link
+                                    to="/registroUsuarioCliente"
+                                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                                >
+                                    ¿No tiene una cuenta?
+                                </Link>
+                            </div>
                         </div>
                     </form>
                 </main>

@@ -138,13 +138,13 @@ const ClienteConsulta = () => {
               {isDropdownOpen && (
                 <div id="dropdown-menu" className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-md shadow-lg">
                   {user ? (
-                    <Link to={`/usuarioPerfil/${user.id}`} className='block px-4 py-2 text-gray-700 hover:bg-gray-300'>Mi Perfil</Link>
+                    <Link to={`/usuarioPerfil`} className='block px-4 py-2 text-gray-700 hover:bg-gray-300'>Mi Perfil</Link>
                   ) : (
                     <p>No hay sesión activa.</p>
                   )}
-                  <li className="px-4 py-2 hover:bg-gray-200 cursor-pointer">
+                  <div className="px-4 py-2 hover:bg-gray-200 cursor-pointer">
                     <button onClick={handleLogout}>Cerrar Sesión</button>
-                  </li>
+                  </div>
                 </div>
               )}
             </div>

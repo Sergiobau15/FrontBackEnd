@@ -13,7 +13,6 @@ import WelcomeCashier from './pages/user/cashier/WelcomeCashier';
 import WelcomeAdmin from './pages/user/admin/WelcomeAdmin';
 import AdminUsers from './pages/user/admin/AdminUsers';
 import RegisterUser from './pages/user/admin/RegisterUser';
-import UpdateUserForm from './pages/user/admin/UpdateUserForm';
 import WelcomeStorekeeper from './pages/user/storekeeper/WelcomeStorekeeper';
 import Rpedido from './pages/orders/Rpedido';
 import Cpedido from './pages/orders/Cpedido';
@@ -26,9 +25,12 @@ import DetallesVenta from './pages/sale/detalles';
 import { CartProvider } from './pages/CartContext';
 import OrdersPage from './pages/orders/OrdersPage';
 import PedidosCliente from './pages/products/cliente/PedidosCliente';
-import ContraNueva from './pages/user/contraNueva';
 import AdministradorConsultaProductoInactivo from './pages/products/admin/consultaInactivo';
 import CategoriaForm from './pages/products/admin/registroCategoria';
+import SendEmail from './pages/user/sendEmail';
+import SendCode from './pages/user/sendCode';
+import ContraNueva from './pages/user/contraNueva';
+import CambioClave from './pages/user/cambioClave';
 
 function App() {
   return (
@@ -44,12 +46,11 @@ function App() {
           <Route path="/consultaEspecificaIndex/:id" element={<IndexConsultaEspecifica />} />
           <Route path="/registroUsuarioCliente" element={<Create />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/clienteProfile" element={<UserProfile />} />
+          <Route path="/usuarioPerfil" element={<UserProfile />} />
           <Route path="/bienvenidaCajero" element={<WelcomeCashier />} />
           <Route path="/bienvenidaAdministrador" element={<WelcomeAdmin />} />
           <Route path="/usuarios" element={<AdminUsers />} />
           <Route path="/registroUsuarioAdministrador" element={<RegisterUser />} />
-          <Route path="/user/admin/update/:userId" element={<UpdateUserForm />} />
           <Route path="/bienvenidaAlmacenista" element={<WelcomeStorekeeper />} />
           <Route path='/user/rpedido' element={<Rpedido />} />
           <Route path='/user/cpedido' element={<Cpedido />} />
@@ -64,6 +65,10 @@ function App() {
           <Route path="/nuevaClave" element={<ContraNueva />} />
           <Route path="/productosInactivos" element={<AdministradorConsultaProductoInactivo />} />
           <Route path="/registrarCategoria" element={<CategoriaForm />} />
+          <Route path="/nuevaClave" element={<ContraNueva />} />
+          <Route path="/cambioClave" element={<CambioClave />} />
+          <Route path="/enviarCorreo" element={<SendEmail />} />
+          <Route path="/enviarCodigo" element={<SendCode />} />
 
 
         </Routes>

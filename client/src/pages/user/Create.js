@@ -11,7 +11,9 @@ const Create = () => {
         direccion: "",
         genero: ""
     });
-    
+
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
     const [errors, setErrors] = useState({});
     const [rol] = useState("Cliente");
     const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
@@ -67,7 +69,7 @@ const Create = () => {
             ...prevState,
             [name]: value
         }));
-        
+
         const error = validateField(name, value);
         setErrors(prevErrors => ({
             ...prevErrors,
@@ -100,11 +102,18 @@ const Create = () => {
             Genero: formData.genero,
             Rol: rol
         }).then(() => {
-            alert("Registro exitoso. Por favor, revisa tu correo electrónico para obtener tus credenciales de acceso.");
-            navigate('/login');
+            setSuccess("Registro exitoso. Por favor, revisa tu correo electrónico para obtener tus credenciales de acceso.");
+            setError(""); // Limpiamos el mensaje de error si existía.
+            setTimeout(() => {
+                navigate("/login");
+            }, 3000);
         }).catch(error => {
-            console.error("Hubo un error en el registro:", error);
-            alert("Hubo un error en el registro.");
+            setSuccess(""); // Limpiamos el mensaje de éxito si existía.
+            if (error.response && error.response.data && error.response.data.message) {
+                setError(error.response.data.message);
+            } else {
+                setError("Ocurrió un error inesperado. Por favor, inténtelo de nuevo.");
+            }
         });
     };
 
@@ -142,7 +151,7 @@ const Create = () => {
                         </ul>
                     </nav>
 
-                    <div className="flex items-center space-x-6 mt-4 md:mt-0">  
+                    <div className="flex items-center space-x-6 mt-4 md:mt-0">
                         <div className="relative" ref={accountDropdownRef}>
                             <button
                                 onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
@@ -187,6 +196,65 @@ const Create = () => {
             <main className="container mx-auto p-4 m-4">
                 <div className="max-w-md mx-auto p-8 bg-white rounded-md shadow-md">
                     <h2 className="text-2xl font-semibold text-center mb-6">Crear una cuenta</h2>
+                    {/* Alerta de éxito */}
+                    {success && (
+                        <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 relative rounded-r-lg shadow-sm">
+                            <div className="flex">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3">
+                                    <h3 className="text-sm font-medium text-green-800">
+                                        ¡Éxito!
+                                    </h3>
+                                    <p className="mt-1 text-sm text-green-700">
+                                        {success}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setSuccess("")}
+                                    className="absolute top-4 right-4 text-green-600 hover:text-green-800"
+                                >
+                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Alerta de error */}
+                    {error && (
+                        <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 relative rounded-r-lg shadow-sm">
+                            <div className="flex">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3">
+                                    <h3 className="text-sm font-medium text-red-800">
+                                        ¡Error!
+                                    </h3>
+                                    <p className="mt-1 text-sm text-red-700">
+                                        {error}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setError("")}
+                                    className="absolute top-4 right-4 text-red-600 hover:text-red-800"
+                                >
+                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+
                     <form onSubmit={handleSubmit}>
                         <div className="flex mb-4">
                             <div className="w-1/2 pr-2">
@@ -280,7 +348,7 @@ const Create = () => {
                                 Al registrarte, recibirás un correo con tus credenciales de acceso.
                             </p>
                             <Link to="/login" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                                ¿Ya tienes una cuenta?
+                                ¿Ya tiene una cuenta?
                             </Link>
                         </div>
                     </form>
