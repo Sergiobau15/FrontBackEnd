@@ -134,11 +134,23 @@ function Cpedido() {
     }));
   };
 
-  // Guardar los cambios en el pedido
   const handleSave = () => {
     // Verificar que los campos requeridos estén completos
-    if (!formData.Numero || !formData.Direccion || !formData.Metodo) {
-      handleAlert('Por favor, completa todos los campos requeridos.');
+    let errorMessage = '';
+    
+    if (!formData.Numero) {
+      errorMessage += 'El número es obligatorio.\n';
+    }
+    if (!formData.Direccion) {
+      errorMessage += 'La dirección es obligatoria.\n';
+    }
+    if (!formData.Metodo) {
+      errorMessage += 'El método de pago es obligatorio.\n';
+    }
+  
+    // Si hay algún error, mostramos el mensaje y no hacemos nada
+    if (errorMessage) {
+      alert(errorMessage);  // Podrías usar otro tipo de modal o notificación
       return;
     }
   
@@ -150,54 +162,33 @@ function Cpedido() {
       },
       body: JSON.stringify(formData),
     })
-      .then((response) => response.json())
-      .then((data) => {
-        // Verificar si la respuesta contiene un mensaje de error
-        if (data.message) {
-          handleAlert(data.message); // Mostrar mensaje de éxito o error
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Error al actualizar el pedido');
         }
+        return response.json();
+      })
+      .then(() => {
+        // Si la actualización es exitosa, actualizamos el estado de los pedidos
+        setData((prevData) =>
+          prevData.map((order) =>
+            order.id === formData.id ? { ...order, ...formData } : order
+          )
+        );
+        setFilteredData((prevFilteredData) =>
+          prevFilteredData.map((order) =>
+            order.id === formData.id ? { ...order, ...formData } : order
+          )
+        );
   
-        // Si la actualización es exitosa
-        if (data.pedido_id) {
-          // Actualizar el estado local sin recargar la página
-          setData((prevData) =>
-            prevData.map((order) =>
-              order.id === formData.id ? { ...order, ...formData } : order
-            )
-          );
-          setFilteredData((prevFilteredData) =>
-            prevFilteredData.map((order) =>
-              order.id === formData.id ? { ...order, ...formData } : order
-            )
-          );
-  
-          // Cerrar el modal de edición
-          setEditOrder(null); // Esto cierra el modal de edición
-  
-          // Mostrar la alerta de confirmación de éxito
-          setShowAlert(true);
-          setAlertMessage('Pedido actualizado exitosamente.');
-  
-          // Cerrar la alerta después de un tiempo (3 segundos)
-          setTimeout(() => {
-            setShowAlert(false); // Cerrar el modal de alerta
-          }, 3000);
-  
-          // Forzar la recarga de la página (si lo deseas)
-          // window.location.reload(); // Descomenta si deseas hacer un hard refresh
-  
-          // O puedes optar por sólo actualizar la UI sin recargarla completamente
-          // (esto ya se logra con el setData y setFilteredData)
-        }
+        // Cerrar el modal de edición
+        setEditOrder(null); // Esto cierra el modal
       })
       .catch((error) => {
-        // Si ocurre un error, mostrar el mensaje de error
-        handleAlert(error.message); // Mostrar mensaje de error
-  
-        // Asegurarse de cerrar el modal de edición también en caso de error
-        setEditOrder(null); // Esto cierra el modal de edición si ocurre un error
+        console.error('Error al guardar el pedido:', error);
       });
   };
+   
   
   
   // Mostrar los productos en un modal
@@ -248,7 +239,7 @@ function Cpedido() {
           {editOrder && (
             <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
               <div className="bg-white shadow-md rounded-lg p-6 max-w-lg w-full">
-                <h2 className="text-xl font-semibold mb-2">Editar Orden</h2>
+                <h2 className="text-xl font-semibold mb-2">Editar Pedido</h2>
                 <form>
                   <label className="block mb-2">
                     Número:
@@ -272,24 +263,20 @@ function Cpedido() {
                   </label>
                   <label className="block mb-2">
                     Método de Pago:
-                    <input
-                      type="text"
+                    <select
                       name="Metodo"
                       value={formData.Metodo}
                       onChange={handleInputChange}
                       className="mt-1 block w-full border border-gray-300 rounded-lg p-2"
-                    />
+                    >
+                      <option value="Efectivo">Efectivo</option>
+                      <option value="Tarjeta">Tarjeta</option>
+                    </select>
                   </label>
-                  <label className="block mb-2">
-                    Precio Total:
-                    <input
-                      type="number"
-                      name="totalPrice"
-                      disabled
-                      value={formData.Total}
-                      className="mt-1 block w-full border border-gray-300 rounded-lg p-2"
-                    />
-                  </label>
+                  <div className="block mb-4">
+                    <p className="font-semibold">Precio Total: ${formData.Total}</p>
+                  </div>
+
                   <button
                     type="button"
                     onClick={handleSave} // Guardar la orden y cerrar el modal
@@ -313,7 +300,7 @@ function Cpedido() {
           {showProductsModal && (
             <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
               <div className="bg-white shadow-md rounded-lg p-6 max-w-lg w-full">
-                <h2 className="text-xl font-semibold mb-2">Productos en la Orden</h2>
+                <h2 className="text-xl font-semibold mb-2">Productos en el Pedido</h2>
                 <ul className="list-disc pl-5 mb-4">
                   {selectedProducts.map((product) => (
                     <li key={product.id} className="mb-1">
