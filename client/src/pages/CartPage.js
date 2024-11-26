@@ -16,6 +16,7 @@ const CartPage = () => {
 
   // Fetch productos y datos del usuario
   useEffect(() => {
+    // Cargar los productos disponibles
     const fetchProducts = async () => {
       try {
         const response = await fetch('http://localhost:3002/products');
@@ -28,10 +29,17 @@ const CartPage = () => {
 
     fetchProducts();
 
+    // Obtener datos del usuario desde sessionStorage
     const userData = sessionStorage.getItem('usuario');
-    setUser(userData ? JSON.parse(userData) : null);
-  }, [navigate]);
+    if (userData) {
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser); // Guardar todos los datos del usuario, incluyendo ID
+    } else {
+      setUser(null);
+    }
+  }, []);
 
+  // Calcular subtotal, IVA y total de la compra
   const calculateSubtotal = () => {
     return cart.reduce((total, item) => total + (item.precio * item.cantidad), 0);
   };
@@ -46,6 +54,7 @@ const CartPage = () => {
     return (subtotal + iva);
   };
 
+  // Manejo del cambio de cantidad de un producto
   const handleQuantityChange = (index, newQuantity) => {
     const quantity = parseInt(newQuantity, 10);
     const maxQuantity = products.find(product => product.id === cart[index].id)?.cantidad || 0;
@@ -57,11 +66,13 @@ const CartPage = () => {
     }
   };
 
+  // Eliminar un producto del carrito
   const handleRemoveFromCart = (index) => {
     const updatedCart = cart.filter((_, i) => i !== index);
     setCart(updatedCart);
   };
 
+  // Manejo de la compra
   const handleCheckout = async () => {
     if (!user) {
       setModalMessage('Por favor, inicie sesión para finalizar la compra.');
@@ -82,6 +93,16 @@ const CartPage = () => {
       return;
     }
   
+    // Validar stock disponible para cada producto en el carrito
+    for (const item of cart) {
+      const product = products.find(p => p.id === item.id);
+      if (product && item.cantidad > product.cantidad) {
+        setModalMessage(`No hay suficiente stock para ${item.nombre}.`);
+        setModalVisible(true);
+        return;
+      }
+    }
+  
     const totalPrice = calculateTotal();
   
     // Convertir la fecha al formato adecuado
@@ -89,6 +110,7 @@ const CartPage = () => {
     const formattedDate = fecha.split('T')[0] + ' ' + fecha.split('T')[1].split('.')[0]; // Convertir a formato 'YYYY-MM-DD HH:MM:SS'
   
     const order = {
+      user_id: user.ID,
       nombre: user.Nombres,
       numero: user.Telefono,
       direccion: user.Direccion,
@@ -105,7 +127,6 @@ const CartPage = () => {
     };
   
     try {
-      // Realizar validación de inventario, etc.
       const response = await fetch('http://localhost:3002/orders/createcar', {
         method: 'POST',
         headers: {
@@ -127,12 +148,13 @@ const CartPage = () => {
       setModalVisible(true);
     }
   };
-  
-  
 
+  // Toggle del menú desplegable
   const toggleDropdown = () => {
     setIsDropdownOpen(prevState => !prevState);
   };
+
+  // Cerrar sesión
   const handleLogout = () => {
     const user = JSON.parse(sessionStorage.getItem('usuario'));
     if (user) {
@@ -143,6 +165,7 @@ const CartPage = () => {
     setUser(null);
     navigate('/');
   };
+
   return (
     <div className="flex flex-col min-h-screen">
       <header className="bg-gray-800 py-4 shadow-md w-full">
