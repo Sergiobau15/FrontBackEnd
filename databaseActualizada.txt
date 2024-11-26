@@ -116,55 +116,55 @@ INSERT INTO usuario (Nombres, Apellidos, Correo, Contrasena, Telefono, Direccion
 ('Miguel Ángel', 'Torres Vargas', 'cliente3@gmail.com', 'Cliente789123', '3301234568', 'Avenida 90 #23-45', 'Masculino', 'Cliente', 'Activo', 'NoUsada'),
 ('Diana Patricia', 'Morales Luna', 'cliente4@gmail.com', 'Cliente321987', '3147894564', 'Calle 45 #67-89', 'Femenino', 'Cliente', 'Inactivo', 'NoUsada');
 
--- Crear tabla de pedidos
+CREATE TABLE ventas (
+    id INT AUTO_INCREMENT PRIMARY KEY,            
+    fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+    descuento DECIMAL(5) DEFAULT 0,            
+    subtotal DECIMAL(10) NOT NULL,             
+    iva DECIMAL(10) NOT NULL,                  
+    total DECIMAL(10) NOT NULL,                
+    metodo_pago ENUM('Tarjeta', 'Efectivo') NOT NULL,  
+    usuario_id INT NOT NULL,                     
+    FOREIGN KEY (usuario_id) REFERENCES usuario(ID) 
+);
+
+
+CREATE TABLE detalle_venta (
+    id INT AUTO_INCREMENT PRIMARY KEY,            
+    venta_id INT NOT NULL,                         
+    producto_id int unsigned,                      
+    cantidad INT NOT NULL,                         
+    precio_unitario DECIMAL(10) NOT NULL,       
+    subtotal DECIMAL(10) NOT NULL,              
+    FOREIGN KEY (venta_id) REFERENCES ventas(id), 
+    FOREIGN KEY (producto_id) REFERENCES productos(id) 
+);
+
+-- Tabla de pedidos
 CREATE TABLE IF NOT EXISTS Pedido (
     id INT AUTO_INCREMENT PRIMARY KEY,
     Nombre VARCHAR(255) NOT NULL,
     Numero VARCHAR(50) NOT NULL,
     Direccion TEXT NOT NULL,
     Metodo VARCHAR(100) NOT NULL,
-    Fecha DATETIME NOT NULL,
+    Fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ,
+	user_id INT NOT NULL,  
+    FOREIGN KEY (user_id) REFERENCES Usuario(ID) ON DELETE CASCADE,
     estado ENUM('activo', 'inactivo') DEFAULT 'activo'
 );
 
--- Crear tabla de detalle de pedido
+-- Tabla de detalle de pedido
 CREATE TABLE IF NOT EXISTS Detalle_Pedido (
     id INT AUTO_INCREMENT PRIMARY KEY,
     pedido_Id INT NOT NULL,
-    producto_Id INT UNSIGNED NOT NULL,
+    producto_Id INT unsigned NOT NULL,
     cantidad INT NOT NULL,
-    precio_Unitario DECIMAL(10, 2) NOT NULL,
-    precio_Total DECIMAL(10, 2) NOT NULL,
+    precio_Unitario DECIMAL(10) NOT NULL,
+    precio_Total DECIMAL(10) NOT NULL,
     estado ENUM('activo', 'inactivo') DEFAULT 'activo',
-    FOREIGN KEY (pedido_Id) REFERENCES Pedido(id) ON DELETE CASCADE,
-    FOREIGN KEY (producto_Id) REFERENCES productos(id) ON DELETE CASCADE
+    FOREIGN KEY (Pedido_Id) REFERENCES Pedido(id) ON DELETE CASCADE,
+    FOREIGN KEY (Producto_Id) REFERENCES Productos(id)
 );
-
--- Crear tabla de ventas
-CREATE TABLE ventas (
-    id INT AUTO_INCREMENT PRIMARY KEY,            
-    fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-    descuento DECIMAL(5, 2) DEFAULT 0,            
-    subtotal DECIMAL(10, 2) NOT NULL,             
-    iva DECIMAL(10, 2) NOT NULL,                  
-    total DECIMAL(10, 2) NOT NULL,                
-    metodo_pago ENUM('Tarjeta', 'Efectivo') NOT NULL,  
-    usuario_id INT NOT NULL,                     
-    FOREIGN KEY (usuario_id) REFERENCES usuario(ID) 
-);
-
--- Crear tabla de detalle de venta
-CREATE TABLE detalle_venta (
-    id INT AUTO_INCREMENT PRIMARY KEY,            
-    venta_id INT NOT NULL,                         
-    producto_id INT UNSIGNED,                      
-    cantidad INT NOT NULL,                         
-    precio_unitario DECIMAL(10, 2) NOT NULL,       
-    subtotal DECIMAL(10, 2) NOT NULL,              
-    FOREIGN KEY (venta_id) REFERENCES ventas(id), 
-    FOREIGN KEY (producto_id) REFERENCES productos(id) 
-);
-
 
 update usuario set rol ='Administrador' where ID=11;
 select * from historial_activaciones;
