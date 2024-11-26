@@ -23,8 +23,7 @@ import UserProfile from './pages/user/UserProfile';
 import Footer from './components/Footer';
 import DetallesVenta from './pages/sale/detalles';
 import { CartProvider } from './pages/CartContext';
-import OrdersPage from './pages/orders/OrdersPage';
-import PedidosCliente from './pages/products/cliente/PedidosCliente';
+import PedidosCliente from './pages/orders/PedidosCliente';
 import AdministradorConsultaProductoInactivo from './pages/products/admin/consultaInactivo';
 import CategoriaForm from './pages/products/admin/registroCategoria';
 import SendEmail from './pages/user/sendEmail';
@@ -60,8 +59,7 @@ function App() {
           <Route path='/usuarioPerfil/:id' element={<UserProfile />} />
           <Route path='/registroVenta' element={<Rventa />} />
           <Route path='/user/detallesVenta/:id' element={<DetallesVenta />}/>
-          <Route path='/ordenes' element={<OrdersPage />}  />
-          <Route path="/pedidoCliente" element={<PedidosCliente />} />
+          <Route path="/pedidosCliente" element={<PedidosCliente />} />
           <Route path="/nuevaClave" element={<ContraNueva />} />
           <Route path="/productosInactivos" element={<AdministradorConsultaProductoInactivo />} />
           <Route path="/registrarCategoria" element={<CategoriaForm />} />
