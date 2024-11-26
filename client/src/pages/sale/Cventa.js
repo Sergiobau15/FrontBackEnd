@@ -89,7 +89,7 @@ function Cventa() {
         </div>
 
         {filteredData.length === 0 && !loading && !error && (
-          <p className="text-center text-lg text-gray-500">No se encontraron resultados.</p>
+          <p className="text-center text-lg text-gray-500">No hay ventas registradas.</p>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
@@ -103,9 +103,9 @@ function Cventa() {
                 <p className="mb-1">Método de Pago: <span className="font-medium">{order.metodo_pago}</span></p>
                 <p className="mb-3">
                   Fecha y Hora: <span className="font-medium">
-                  {new Date(order.fecha_hora).toLocaleString()}
-  </span>
-</p>
+                    {new Date(order.fecha_hora).toLocaleString()}
+                  </span>
+                </p>
 
                 <button
                   onClick={() => handleViewDetails(order)} // Pasar la orden completa al hacer clic
@@ -185,7 +185,6 @@ function Cventa() {
 
   // Mostrar mensajes de carga o error
   if (loading) return <p className="text-center text-lg">Cargando...</p>;
-  if (error) return <p className="text-center text-lg text-red-600">Error: {error.message}</p>;
 
   return (
     <>{renderLayout()}</>
